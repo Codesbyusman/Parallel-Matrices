@@ -20,7 +20,7 @@ int processId; // Process rank
 MPI_Status status;
 
 // function to multiply using blocking mpi
-void multiply(int argc, char **argv, double **myarr1, double **myarr2, double **myarr3, double **ans, const int r1, const int c1, const int c2)
+void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, const int c1, const int c2)
 {
 
   // creating the temporary arrays
@@ -37,15 +37,16 @@ void multiply(int argc, char **argv, double **myarr1, double **myarr2, double **
   // helper variables for getting the processors and all
   int processCount, slaveTaskCount, source, dest, offset;
 
-  // Each process gets unique ID (rank)
+  // Each process id
   MPI_Comm_rank(MPI_COMM_WORLD, &processId);
-  // Number of processes in communicator will be assigned to variable -> processCount
+  
+  // the size -- number of processes
   MPI_Comm_size(MPI_COMM_WORLD, &processCount);
 
-  // Number of slave tasks will be assigned to variable -> slaveTaskCount
+  // the salve processes as 0 would be master so doing -1
   slaveTaskCount = processCount - 1;
 
-  // Root (Master) process
+  // Master Process
   if (processId == 0)
   {
 
@@ -130,26 +131,23 @@ void multiply(int argc, char **argv, double **myarr1, double **myarr2, double **
       MPI_Recv(&matrix_c[offset][0], rows * c2, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
     }
 
-    // copy the matrix_c to ans
-    for(int i = 0; i < r1; i++)
-{
-    std::copy(&matrix_c[i][0], &matrix_c[i][0] + c2, &ans[i][0]);
-}
+    // copy the matrix_c to myarray3 i.e. resultant
+    for (int i = 0; i < r1; i++)
+    {
+      std::copy(&matrix_c[i][0], &matrix_c[i][0] + c2, &myarr3[i][0]);
+    }
     // Print the result matrix
     printf("\nResult Matrix C = Matrix A * Matrix B:\n\n");
     for (int i = 0; i < r1; i++)
     {
       for (int j = 0; j < c2; j++)
       {
-        printf("%.0f\t", matrix_c[i][j]);
+        printf("%.0f\t", myarr3[i][j]);
       }
       printf("\n");
     }
     printf("\n");
-
   }
-
-
 
   // Slave Processes
   if (processId > 0)
@@ -204,42 +202,42 @@ int main(int argc, char **argv)
   double **myarr1 = new double *[row1];
   for (int i = 0; i < row1; i++)
   {
-    *myarr1 = new double[col1];
+    myarr1[i] = new double[col1];
   }
 
   double **myarr2 = new double *[col1];
   for (int i = 0; i < col1; i++)
   {
-    *myarr2 = new double[col2];
+    myarr2[i] = new double[col2];
   }
 
   double **matrix_c = new double *[row1];
   for (int i = 0; i < row1; i++)
   {
-    *matrix_c = new double[col2];
+    matrix_c[i] = new double[col2];
   }
 
-double **ans = new double *[row1];
-for (int i = 0; i < row1; i++)
-{
-  ans[i] = new double[col2];
-}
+  double **ans = new double *[row1];
+  for (int i = 0; i < row1; i++)
+  {
+    ans[i] = new double[col2];
+  }
 
   // MPI environment is initialized
   MPI_Init(&argc, &argv);
 
-  multiply(argc, argv, myarr1, myarr2, matrix_c, ans, row1, col1, col2);
+  multiply( myarr1, myarr2, matrix_c, row1, col1, col2);
 
   // MPI_Barrier(MPI_COMM_WORLD);
   if (processId == 0)
   {
-     printf("\ntest\n");
-    //priting the ans pointer
+    printf("\ntest\n");
+    // priting the ans pointer
     for (int i = 0; i < row1; i++)
     {
       for (int j = 0; j < col2; j++)
       {
-        printf("%.0f\t", ans[i][j]);
+        printf("%.0f\t", matrix_c[i][j]);
       }
       printf("\n");
     }
