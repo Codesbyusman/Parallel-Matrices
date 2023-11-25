@@ -15,7 +15,7 @@ COPY project/ .
 
 # Normal build command
 RUN mpicc -o mpi_hello_world mpi_hello_world.c
-RUN mpicc -o blocking blocking.c
+#RUN mpicc -o blocking blocking.c
 #RUN mpic++ -o Q1a Q1a.cpp
 #RUN mpic++ -o Q1b Q1b.cpp
 #RUN mpic++ -o Q1c Q1c.cpp

@@ -2,25 +2,42 @@
 #include <stdio.h>
 #include "mpi.h"
 #include <time.h>
+#include <iostream>
+#include <algorithm>
 #include <sys/time.h>
-
+using namespace std;
 /*
   In here 'process o' which distribute the workload to other processes is considered 
   as Root (Master) process and other processes which do the computation is considered 
   as Slave task processes. 
 */
-
+int processId; // Process rank
 // Number of rows and columnns in a matrix
 #define N 4
 
 MPI_Status status;
 
-// Matrix holders are created
-double matrix_a[N][N],matrix_b[N][N],matrix_c[N][N];
 
-int main(int argc, char **argv)
-{
-  int processCount, processId, slaveTaskCount, source, dest, rows, offset;
+
+// function to multiply using blocking mpi
+void multiply(int argc, char **argv,double myarr1[N][N],double myarr2[N][N], double myarr3[N][N], double ans[N][N]){
+    int rows = N; // Set the number of rows
+    int cols = N; // Set the number of columns
+  // Create a temporary array with the same dimensions
+    double matrix_a[rows][cols];
+    // Use std::copy to copy the elements
+    std::copy(&myarr1[0][0], &myarr1[0][0] + rows * cols, &matrix_a[0][0]);
+  // Create a temporary array with the same dimensions
+    double matrix_b[rows][cols];
+    // Use std::copy to copy the elements
+    std::copy(&myarr2[0][0], &myarr2[0][0] + rows * cols, &matrix_b[0][0]);
+    double matrix_c[rows][cols];
+    // Use std::copy to copy the elements
+    std::copy(&myarr3[0][0], &myarr3[0][0] + rows * cols, &matrix_c[0][0]);
+
+
+
+  int processCount, slaveTaskCount, source, dest, offset;
 
   struct timeval start, stop;
 
@@ -111,6 +128,10 @@ int main(int argc, char **argv)
     }
     printf ("\n");
   }
+  
+
+  // copy the matrix_c to ans
+  std::copy(&matrix_c[0][0], &matrix_c[0][0] + rows * cols, &ans[0][0]);
 
 // Slave Processes 
   if (processId > 0) {
@@ -151,7 +172,50 @@ int main(int argc, char **argv)
     MPI_Send(&rows, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
     // Resulting matrix with calculated rows will be sent to root process
     MPI_Send(&matrix_c, rows*N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
+
+  
   }
 
-  MPI_Finalize();
+
+
+
+
+}
+
+int main(int argc, char **argv)
+{
+  double myarr1[N][N],myarr2[N][N];// Matrix holders are created
+double matrix_c[N][N]; // Resulting matrix holder is created;
+double ans[N][N];
+    //inilize the matrix_a
+    for (int i = 0; i<N; i++) {
+      for (int j = 0; j<N; j++) {
+       // arr1[i][j]= rand()%10;
+        //matrix_b[i][j]= rand()%10;
+      }
+    }
+
+  multiply(argc, argv,myarr1,myarr2,matrix_c,ans);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+
+        // now stop all the process except the main process
+        // Specify the ranks to be stopped
+    int ranksToStop[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    int numRanksToStop = sizeof(ranksToStop) / sizeof(ranksToStop[0]);
+
+    // Check if the current rank is in the list of ranks to be stopped
+    for (int i = 0; i < numRanksToStop; ++i) {
+        if (processId == ranksToStop[i]) {
+          //  std::cout << "Rank " << processId << " stopping.\n";
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+    }
+  //MPI_Finalize();
+  // i just want the process 0 to continue from here.
+  if(processId == 0){
+      
+  }
+
+  
 }
