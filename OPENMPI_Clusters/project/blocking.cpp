@@ -130,6 +130,11 @@ void multiply(int argc, char **argv, double **myarr1, double **myarr2, double **
       MPI_Recv(&matrix_c[offset][0], rows * c2, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
     }
 
+    // copy the matrix_c to ans
+    for(int i = 0; i < r1; i++)
+{
+    std::copy(&matrix_c[i][0], &matrix_c[i][0] + c2, &ans[i][0]);
+}
     // Print the result matrix
     printf("\nResult Matrix C = Matrix A * Matrix B:\n\n");
     for (int i = 0; i < r1; i++)
@@ -141,10 +146,10 @@ void multiply(int argc, char **argv, double **myarr1, double **myarr2, double **
       printf("\n");
     }
     printf("\n");
+
   }
 
-  // copy the matrix_c to ans
-  std::copy(&matrix_c[0][0], &matrix_c[0][0] + r1 * c2, &ans[0][0]);
+
 
   // Slave Processes
   if (processId > 0)
@@ -214,11 +219,11 @@ int main(int argc, char **argv)
     *matrix_c = new double[col2];
   }
 
-  double **ans = new double *[row1];
-  for (int i = 0; i < row1; i++)
-  {
-    *ans = new double[col2];
-  }
+double **ans = new double *[row1];
+for (int i = 0; i < row1; i++)
+{
+  ans[i] = new double[col2];
+}
 
   // MPI environment is initialized
   MPI_Init(&argc, &argv);
@@ -228,6 +233,16 @@ int main(int argc, char **argv)
   // MPI_Barrier(MPI_COMM_WORLD);
   if (processId == 0)
   {
+     printf("\ntest\n");
+    //priting the ans pointer
+    for (int i = 0; i < row1; i++)
+    {
+      for (int j = 0; j < col2; j++)
+      {
+        printf("%.0f\t", ans[i][j]);
+      }
+      printf("\n");
+    }
     printf("test\n");
   }
 }
