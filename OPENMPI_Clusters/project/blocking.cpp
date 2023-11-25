@@ -12,34 +12,31 @@ using namespace std;
   as Slave task processes.
 */
 int processId; // Process rank
-// Number of rows and columnns in a matrix
-#define N 4
+
+#define row1 4
+#define col1 1
+#define col2 2
 
 MPI_Status status;
 
 // function to multiply using blocking mpi
-void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], double myarr3[N][N], double ans[N][N])
+void multiply(int argc, char **argv, double **myarr1, double **myarr2, double **myarr3, double **ans, const int r1, const int c1, const int c2)
 {
-  int rows = N; // Set the number of rows
-  int cols = N; // Set the number of columns
-                // Create a temporary array with the same dimensions
-  double matrix_a[rows][cols];
-  // Use std::copy to copy the elements
-  std::copy(&myarr1[0][0], &myarr1[0][0] + rows * cols, &matrix_a[0][0]);
-  // Create a temporary array with the same dimensions
-  double matrix_b[rows][cols];
-  // Use std::copy to copy the elements
-  std::copy(&myarr2[0][0], &myarr2[0][0] + rows * cols, &matrix_b[0][0]);
-  double matrix_c[rows][cols];
-  // Use std::copy to copy the elements
-  std::copy(&myarr3[0][0], &myarr3[0][0] + rows * cols, &matrix_c[0][0]);
 
+  // creating the temporary arrays
+  // making the depp copies
+  double matrix_a[r1][c1];
+  double matrix_b[c1][c2];
+  double matrix_c[r1][c2]; // the resultant
+
+  // Use std::copy to copy the elements (such as writing loop and doing)
+  std::copy(&myarr1[0][0], &myarr1[0][0] + r1 * c1, &matrix_a[0][0]);
+  std::copy(&myarr2[0][0], &myarr2[0][0] + c1 * c2, &matrix_b[0][0]);
+  std::copy(&myarr3[0][0], &myarr3[0][0] + r1 * c2, &matrix_c[0][0]);
+
+  // helper variables for getting the processors and all
   int processCount, slaveTaskCount, source, dest, offset;
 
-  struct timeval start, stop;
-
-  // MPI environment is initialized
-  MPI_Init(&argc, &argv);
   // Each process gets unique ID (rank)
   MPI_Comm_rank(MPI_COMM_WORLD, &processId);
   // Number of processes in communicator will be assigned to variable -> processCount
@@ -54,11 +51,19 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
 
     // Matrix A and Matrix B both will be filled with random numbers
     srand(time(NULL));
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < r1; i++)
     {
-      for (int j = 0; j < N; j++)
+      for (int j = 0; j < c1; j++)
       {
         matrix_a[i][j] = rand() % 10;
+      }
+    }
+
+    for (int i = 0; i < c1; i++)
+    {
+      for (int j = 0; j < c2; j++)
+      {
+
         matrix_b[i][j] = rand() % 10;
       }
     }
@@ -67,9 +72,9 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
 
     // Print Matrix A
     printf("\nMatrix A\n\n");
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < r1; i++)
     {
-      for (int j = 0; j < N; j++)
+      for (int j = 0; j < c1; j++)
       {
         printf("%.0f\t", matrix_a[i][j]);
       }
@@ -78,9 +83,9 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
 
     // Print Matrix B
     printf("\nMatrix B\n\n");
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < c1; i++)
     {
-      for (int j = 0; j < N; j++)
+      for (int j = 0; j < c2; j++)
       {
         printf("%.0f\t", matrix_b[i][j]);
       }
@@ -88,7 +93,9 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
     }
 
     // Determine number of rows of the Matrix A, that is sent to each slave process
-    rows = N / slaveTaskCount;
+    int rows = r1 / slaveTaskCount;
+    int extra = r1 % slaveTaskCount;
+
     // Offset variable determines the starting point of the row which sent to slave process
     offset = 0;
 
@@ -96,17 +103,18 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
     // Each message's tag is 1
     for (dest = 1; dest <= slaveTaskCount; dest++)
     {
+      int rowsToSend = (dest <= extra) ? rows + 1 : rows;
       // Acknowledging the offset of the Matrix A
       MPI_Send(&offset, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
       // Acknowledging the number of rows
-      MPI_Send(&rows, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
+      MPI_Send(&rowsToSend, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
       // Send rows of the Matrix A which will be assigned to slave process to compute
-      MPI_Send(&matrix_a[offset][0], rows * N, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
+      MPI_Send(&matrix_a[offset][0], rowsToSend * c1, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
       // Matrix B is sent
-      MPI_Send(&matrix_b, N * N, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
+      MPI_Send(&matrix_b, c2 * c1, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
 
       // Offset is modified according to number of rows sent to each process
-      offset = offset + rows;
+      offset += rowsToSend;
     }
 
     // Root process waits untill the each slave proces sent their calculated result with message tag 2
@@ -119,14 +127,14 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
       MPI_Recv(&rows, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
       // Calculated rows of the each process will be stored int Matrix C according to their offset and
       // the processed number of rows
-      MPI_Recv(&matrix_c[offset][0], rows * N, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
+      MPI_Recv(&matrix_c[offset][0], rows * c2, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
     }
 
     // Print the result matrix
     printf("\nResult Matrix C = Matrix A * Matrix B:\n\n");
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < r1; i++)
     {
-      for (int j = 0; j < N; j++)
+      for (int j = 0; j < c2; j++)
       {
         printf("%.0f\t", matrix_c[i][j]);
       }
@@ -136,11 +144,13 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
   }
 
   // copy the matrix_c to ans
-  std::copy(&matrix_c[0][0], &matrix_c[0][0] + rows * cols, &ans[0][0]);
+  std::copy(&matrix_c[0][0], &matrix_c[0][0] + r1 * c2, &ans[0][0]);
 
   // Slave Processes
   if (processId > 0)
   {
+
+    int rows = 0;
 
     // Source process ID is defined
     source = 0;
@@ -153,20 +163,20 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
     // The slave process receives number of rows sent by root process
     MPI_Recv(&rows, 1, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
     // The slave process receives the sub portion of the Matrix A which assigned by Root
-    MPI_Recv(&matrix_a, rows * N, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
+    MPI_Recv(&matrix_a, rows * c1, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
     // The slave process receives the Matrix B
-    MPI_Recv(&matrix_b, N * N, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
+    MPI_Recv(&matrix_b, c1 * c2, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
 
     // Matrix multiplication
 
-    for (int k = 0; k < N; k++)
+    for (int k = 0; k < c2; k++)
     {
       for (int i = 0; i < rows; i++)
       {
         // Set initial value of the row summataion
         matrix_c[i][k] = 0.0;
         // Matrix A's element(i, j) will be multiplied with Matrix B's element(j, k)
-        for (int j = 0; j < N; j++)
+        for (int j = 0; j < c1; j++)
           matrix_c[i][k] = matrix_c[i][k] + matrix_a[i][j] * matrix_b[j][k];
       }
     }
@@ -179,28 +189,43 @@ void multiply(int argc, char **argv, double myarr1[N][N], double myarr2[N][N], d
     // Number of rows the process calculated will be sent to root process
     MPI_Send(&rows, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
     // Resulting matrix with calculated rows will be sent to root process
-    MPI_Send(&matrix_c, rows * N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
+    MPI_Send(&matrix_c, rows * c2, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
   }
 }
 
 int main(int argc, char **argv)
 {
-  double myarr1[N][N], myarr2[N][N]; // Matrix holders are created
-  double matrix_c[N][N];             // Resulting matrix holder is created;
-  double ans[N][N];
-  // inilize the matrix_a
-  for (int i = 0; i < N; i++)
+
+  double **myarr1 = new double *[row1];
+  for (int i = 0; i < row1; i++)
   {
-    for (int j = 0; j < N; j++)
-    {
-      // arr1[i][j]= rand()%10;
-      // matrix_b[i][j]= rand()%10;
-    }
+    *myarr1 = new double[col1];
   }
 
-  multiply(argc, argv, myarr1, myarr2, matrix_c, ans);
+  double **myarr2 = new double *[col1];
+  for (int i = 0; i < col1; i++)
+  {
+    *myarr2 = new double[col2];
+  }
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  double **matrix_c = new double *[row1];
+  for (int i = 0; i < row1; i++)
+  {
+    *matrix_c = new double[col2];
+  }
+
+  double **ans = new double *[row1];
+  for (int i = 0; i < row1; i++)
+  {
+    *ans = new double[col2];
+  }
+
+  // MPI environment is initialized
+  MPI_Init(&argc, &argv);
+
+  multiply(argc, argv, myarr1, myarr2, matrix_c, ans, row1, col1, col2);
+
+  // MPI_Barrier(MPI_COMM_WORLD);
   if (processId == 0)
   {
     printf("test\n");
