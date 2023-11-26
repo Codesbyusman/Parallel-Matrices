@@ -8,10 +8,6 @@ using namespace std;
 // int processId; // Process rank
 MPI_Status status;
 
-// the stack
-stack<double **> stk;
-stack<int *> dimensionsStack; // Stack to store dimensions
-
 // function to multiply using blocking mpi
 void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, const int c1, const int c2)
 {
@@ -22,10 +18,22 @@ void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, c
     double matrix_b[c1][c2];
     double matrix_c[r1][c2]; // the resultant
 
-    // Use std::copy to copy the elements (such as writing loop and doing)
-    std::copy(&myarr1[0][0], &myarr1[0][0] + r1 * c1, &matrix_a[0][0]);
-    std::copy(&myarr2[0][0], &myarr2[0][0] + c1 * c2, &matrix_b[0][0]);
-    std::copy(&myarr3[0][0], &myarr3[0][0] + r1 * c2, &matrix_c[0][0]);
+    // // Use std::copy to copy the elements (such as writing loop and doing)
+    // std::copy(&myarr1[0][0], &myarr1[0][0] + r1 * c1, &matrix_a[0][0]);
+    // std::copy(&myarr2[0][0], &myarr2[0][0] + c1 * c2, &matrix_b[0][0]);
+    // std::copy(&myarr3[0][0], &myarr3[0][0] + r1 * c2, &matrix_c[0][0]);
+    // Copy the elements using loops
+    for (int i = 0; i < r1; i++)
+        for (int j = 0; j < c1; j++)
+            matrix_a[i][j] = myarr1[i][j];
+
+    for (int i = 0; i < c1; i++)
+        for (int j = 0; j < c2; j++)
+            matrix_b[i][j] = myarr2[i][j];
+
+    for (int i = 0; i < r1; i++)
+        for (int j = 0; j < c2; j++)
+            matrix_c[i][j] = myarr3[i][j];
 
     // helper variables for getting the processors and all
     int processCount, slaveTaskCount, source, dest, offset, processId;
@@ -172,30 +180,20 @@ void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, c
 
 double **solveEvaluation(int **dimensions, double ***arrays, string evaluation)
 {
+    stack<double **> stk;
+    stack<int *> dimensionsStack;
 
     for (int i = 0; i < evaluation.length(); i++)
     {
-
-        if (evaluation[i] == '(')
+        if (isdigit(evaluation[i]))
         {
             // Push the matrix onto the stack
-            stk.push(arrays[evaluation[i + 1] - '1']);
+            stk.push(arrays[evaluation[i] - '1']);
             // Push the dimensions onto the stack
-            dimensionsStack.push(dimensions[evaluation[i + 1] - '1']);
-            i++; // Skip the next character (matrix index)
-
-            // if next is digit then push the next matrix
-            if (isdigit(evaluation[i + 1]))
-            {
-                stk.push(arrays[evaluation[i + 1] - '1']);
-
-                dimensionsStack.push(dimensions[evaluation[i + 1] - '1']);
-                i++;
-            }
+            dimensionsStack.push(dimensions[evaluation[i] - '1']);
         }
         else if (evaluation[i] == ')')
         {
-
             // Pop the top two matrices, multiply, and push the result back
             double **matrix2 = stk.top();
             stk.pop();
@@ -220,15 +218,10 @@ double **solveEvaluation(int **dimensions, double ***arrays, string evaluation)
             // Push the result onto the stack
             stk.push(result);
 
-            MPI_Barrier(MPI_COMM_WORLD);
-
             int *resultDim = new int[2];
             resultDim[0] = r1;
             resultDim[1] = c2;
             dimensionsStack.push(resultDim);
-
-            // MPI_Barrier(MPI_COMM_WORLD);
-            // change dimensions array to reflect the new matrix
         }
     }
 
@@ -288,9 +281,16 @@ int main(int argc, char **argv)
         cout << "\t Running part A - MPI Mul" << endl;
         cout << "\t::::::::::::::::::::::::::\n"
              << endl;
-    }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+        // the arrays
+        cout << "The arrays are: " << endl;
+        for (int i = 0; i < TOTALARRAYS; i++)
+        {
+            cout << "Array " << i + 1 << endl;
+            printArray(array[i], dimensions[i][0], dimensions[i][1]);
+            cout << endl;
+        }
+    }
 
     solveEvaluation(dimensions, array, evalautaionString);
 
