@@ -10,8 +10,12 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <unistd.h>
 #include <climits>
 #include <mpi.h>
+#include <thread>
+#include <chrono>
+
 #include <queue>
 #include <stack>
 
@@ -269,21 +273,23 @@ std::string removeCharacter(const std::string &input, char character)
     return result;
 }
 
-
-std::queue<int*> dimen_to_operate;
+std::queue<int *> dimen_to_operate;
 
 int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int argc, char *argv[], int p_rank, int num_process)
 {
+
     cout << "I am called by process: " << p_rank << endl;
     int **result = nullptr;
-
+    int **finalanswer = nullptr;
     stack<int **> stk;
     stack<int *> dimensionsStack;
     int r1, c1, c2;
     int *dimen;
-
+    int squareSize2;
+    int squareSize;
     if (p_rank == 0)
     {
+
         cout << "Inside solveEvaluation" << endl;
         for (int i = 0; i < evaluation.length(); i++)
         {
@@ -312,22 +318,19 @@ int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int ar
                 c2 = dim2[1];
 
                 // store the dimensions in an array
-                
 
                 cout << "R1:" << r1 << " C1:" << c1 << " C2:" << c2 << endl;
                 // push r1,c1,c2 to the stack
-                int* arr1 = new int[3];
+                int *arr1 = new int[3];
                 arr1[0] = r1;
                 arr1[1] = c1;
                 arr1[2] = c2;
                 dimen_to_operate.push(arr1);
-                // r1 = 4;
-                // c2 = 4;
 
-                result = new int *[r1];
-                for (int i = 0; i < r1; ++i)
+                result = new int *[8];
+                for (int i = 0; i < 8; ++i)
                 {
-                    result[i] = new int[c2];
+                    result[i] = new int[8];
                 }
 
                 // Push the result onto the stack
@@ -340,43 +343,84 @@ int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int ar
             }
         }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-    // get the r1,c1,c2 from the queue
-  //  dimen = dimen_to_operate.front();
-  //  r1 = dimen[0];
-  //  c1 = dimen[1];
-  //  c2 = dimen[2];
+    usleep(1000000);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    // we need to run until dimen_to_operate queue is not empty
+for (int i = 0; i<TOTALARRAYS-1; i++)    {
+        if (p_rank == 0)
+        {
+            cout << "***** SOlving for index: " << i << " ******" << endl;
+            // get the dimensions from the queue
+            dimen = dimen_to_operate.front();
+            r1 = dimen[0];
+            c1 = dimen[1];
+            c2 = dimen[2];
+            // dimen_to_operate.pop();
+            cout << "***************** Going to be Solved**************" << endl;
+            cout << "R1:" << r1 << " C1:" << c1 << " C2:" << c2 << endl;
+            // allocate memory for the result
+            squareSize2 = max(r1, c1);
+            squareSize = max(squareSize2, c2);
 
-    int squareSize2 = max(r1, c1);
-    int squareSize = max(squareSize2, c2);
+            if (squareSize % 2 == 1) {
+                    squareSize = squareSize + 1;
+            }
 
-    //memory for the result
-   // result = new int *[squareSize];
-   // for (int i = 0; i < squareSize; i++)
-   // {
-   //     result[i] = new int[squareSize];
-   // }
-    //  multiply(matrix1, matrix2, result, r1, c1, c2);
-    processArray(argc, argv, squareSize, squareSize, squareSize, p_rank, num_process, result);
-    //MPI_Barrier(MPI_COMM_WORLD);
-/*
-    if (p_rank == 0)
-    {
-                        int *test = dimen_to_operate.front(); 
-                cout << "Test: " << test[0] << " " << test[1] << " " << test[2] << endl;
-        // print the result
-        cout << "Finally Result: " << endl;
-        printArray(4, stk.top());
-        // The final result should be at the top of the stack
-        return stk.top();
+            finalanswer = new int *[squareSize];
+            for (int j = 0; j < squareSize; j++)
+            {
+                finalanswer[j] = new int[squareSize];
+            }
+
+            // assign space to result
+            // result = new int *[squareSize];
+            // for (int i = 0; i < squareSize; i++)
+            // {
+            //    result[i] = new int[squareSize];
+        }
+
+        usleep(1000000);
+        MPI_Barrier(MPI_COMM_WORLD);
+        // get the r1,c1,c2 from the queue
+        //  dimen = dimen_to_operate.front();
+        //  r1 = dimen[0];
+        //  c1 = dimen[1];
+        //  c2 = dimen[2];
+
+        // memory for the result
+        // result = new int *[squareSize];
+        // for (int i = 0; i < squareSize; i++)
+        // {
+        //     result[i] = new int[squareSize];
+        // }
+        //  multiply(matrix1, matrix2, result, r1, c1, c2);
+        processArray(argc, argv, squareSize, squareSize, squareSize, p_rank, num_process, finalanswer);
+        // MPI_Barrier(MPI_COMM_WORLD);
+
+        // after solving the problem, i want to run for the next part
+        usleep(1000000);
+
+        if (p_rank == 0)
+        {
+
+            cout << "***************** Solved**************" << endl;
+            // print the result
+            cout << "Finally Result: " << endl;
+            printArray(squareSize, finalanswer);
+
+            //delete finalanswer
+            for (int i = 0; i < squareSize; i++)
+            {
+                delete[] finalanswer[i];
+            }
+            delete[] finalanswer;
+            // now pop from the queeu
+            dimen_to_operate.pop();
+        }
+
+      
     }
-    else
-    {
-        return NULL;
-    }
-    */
+    return NULL;
 }
 
 std::stack<std::string> operations;
@@ -533,7 +577,7 @@ int main(int argc, char *argv[])
     }
     MPI_Barrier(MPI_COMM_WORLD);
     solveEvaluation(dimensions, array, result, argc, argv, p_rank, num_process);
-
+    MPI_Barrier(MPI_COMM_WORLD);
     // processArray(argc, argv, 4, 4, 4, p_rank, num_process);
     // an array to get the results
     // getting the size
@@ -596,6 +640,6 @@ int main(int argc, char *argv[])
         MPI_Barrier(MPI_COMM_WORLD);
     */
     // rows:1,cols:3
-    cout << "Hello World!" << endl;
+    //cout << "Hello World!" << endl;
     return 0;
 }
