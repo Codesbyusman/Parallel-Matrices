@@ -126,40 +126,27 @@ int main(int argc, char **argv)
 {
 
     int **dimensions = NULL;
-    double ***array = NULL;
     int TOTALARRAYS = 0;
 
     srand(time(NULL));
 
-    string file_name = "test.txt";
+    string file_name = "Dimensions.txt";
     dimensions = read_file(file_name, TOTALARRAYS);
+    cout << "\n\nTotal arrays are: " << TOTALARRAYS << endl;
+    cout << "with dimensions as : " << endl;
     printArray(dimensions, TOTALARRAYS, 2);
-    cout<<"\n\n total arrays are: "<<TOTALARRAYS<<endl;
     // 3d array memory allocation
-    array = new double **[TOTALARRAYS];
-    for (int i = 0; i < TOTALARRAYS; ++i)
-        array[i] = new double *[dimensions[i][0]];
-
-    for (int i = 0; i < TOTALARRAYS; i++)
-    {
-        for (int j = 0; j < dimensions[i][0]; j++)
-        {
-
-            array[i][j] = new double[dimensions[i][1]];
-        }
-    }
 
     // print the 3d array
     // cout << arrays[0][0] << arrays[0][1] << endl;
 
     // initalizing the array
-    for (int i = 0; i < TOTALARRAYS; i++)
-    {
-        initArray(array[i], dimensions[i][0], dimensions[i][1]);
-    }
+    // for (int i = 0; i < TOTALARRAYS; i++)
+    // {
+    //     initArray(array[i], dimensions[i][0], dimensions[i][1]);
+    // }
 
-
-    printArray(array[0], dimensions[0][0], dimensions[0][1]);
+    // printArray(array[0], dimensions[0][0], dimensions[0][1]);
 
     // // print the array
     // for (int i = 0; i < TOTALARRAYS; i++)
@@ -183,13 +170,20 @@ int main(int argc, char **argv)
     // chain multiplication for the above arrays to get the optimal solution
     // int mydim[] = {2,3,4,2,1};
     int n = TOTALARRAYS + 1;
-    cout << "\nn is " << n << "\n";
+
+    // will use for mappping brackets
     int *mybrak = new int[n * n];
+
+    cout << "\n\n    ..... Chain Matrix Mltiplication ..... "
+         << endl;
+    cout << "   ........ FInding Optimal Solution ......... \n"
+         << endl;
 
     printf("Optimal Cost: %d\n", MatrixChainOrder(mydimentions, n, mybrak));
     printf("Optimal Parenthesization: ");
     printOptimalParenthesis(1, n - 1, n, mybrak);
 
+    // the evaluation string
     string evaluationFlow = getOPtimalParenthesis(1, n - 1, n, mybrak);
 
     cout << endl;
@@ -201,6 +195,7 @@ int main(int argc, char **argv)
     command = "mpirun -np=4 ./partA \"" + evaluationFlow + "\"";
     system(command.c_str());
 
+    delete[] mybrak;
     delete[] mydimentions;
 
     return 0;

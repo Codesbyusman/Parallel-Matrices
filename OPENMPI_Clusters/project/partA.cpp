@@ -8,8 +8,8 @@ using namespace std;
 // int processId; // Process rank
 MPI_Status status;
 
-// function to multiply using blocking mpi
-void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, const int c1, const int c2)
+// function to multiply using blocking mpi -------- basic mpi implementation
+void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, const int c1, const int c2, int id1, int id2)
 {
 
     // creating the temporary arrays
@@ -51,47 +51,56 @@ void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, c
     if (processId == 0)
     {
 
-        printf("\n\t\tMatrix - Matrix Multiplication using MPI\n");
+        printf("\n\t\tMatrix - Matrix Multiplication using MPI\n\n");
 
         // Print Matrix A
-        printf("\nMatrix A\n\n");
-        for (int i = 0; i < r1; i++)
-        {
-            for (int j = 0; j < c1; j++)
-            {
-                printf("%.0f\t", matrix_a[i][j]);
-            }
-            printf("\n");
-        }
+        cout << "Matrix A (" << r1 << "x" << c1 << ") :::::::::::: A";
+        id1 == -1 ? cout << "R" << endl : cout << id1 << endl;
 
-        // Print Matrix B
-        printf("\nMatrix B\n\n");
-        for (int i = 0; i < c1; i++)
-        {
-            for (int j = 0; j < c2; j++)
-            {
-                printf("%.0f\t", matrix_b[i][j]);
-            }
-            printf("\n");
-        }
+        cout << "Matrix B (" << c1 << "x" << c2 << ") :::::::::::: A";
+        id2 == -1 ? cout << "R" << endl : cout << id2 << endl;
+        cout << endl;
 
-        // Determine number of rows of the Matrix A, that is sent to each slave process
+        cout << "Matrix C (" << r1 << "x" << c2 << ") :::::::::::: AR" << endl;
+        // for (int i = 0; i < r1; i++)
+        // {
+        //     for (int j = 0; j < c1; j++)
+        //     {
+        //         printf("%.0f\t", matrix_a[i][j]);
+        //     }
+        //     printf("\n");
+        // }
+
+        // // Print Matrix B
+        // printf("\nMatrix B\n\n");
+        // for (int i = 0; i < c1; i++)
+        // {
+        //     for (int j = 0; j < c2; j++)
+        //     {
+        //         printf("%.0f\t", matrix_b[i][j]);
+        //     }
+        //     printf("\n");
+        // }
+
+        // determine the rows of a so that to send each to slave
+        // as rectangular one of slaves may have more than one rows to process
         int rows = r1 / slaveTaskCount;
         int extra = r1 % slaveTaskCount;
 
-        // Offset variable determines the starting point of the row which sent to slave process
+        // offset so to track the location of rows being sent
         offset = 0;
 
         // Calculation details are assigned to slave tasks. Process 1 onwards;
         // Each message's tag is 1
         for (dest = 1; dest <= slaveTaskCount; dest++)
         {
+            // looking if we have extra rows
             int rowsToSend = (dest <= extra) ? rows + 1 : rows;
-            // Acknowledging the offset of the Matrix A
+            // sending offsets
             MPI_Send(&offset, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
-            // Acknowledging the number of rows
+            // sending row numbers
             MPI_Send(&rowsToSend, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
-            // Send rows of the Matrix A which will be assigned to slave process to compute
+            // Send rows of the Matrix A which will be assigned to slave process to compute (actual rows)
             MPI_Send(&matrix_a[offset][0], rowsToSend * c1, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
             // Matrix B is sent
             MPI_Send(&matrix_b, c2 * c1, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
@@ -104,6 +113,8 @@ void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, c
         for (int i = 1; i <= slaveTaskCount; i++)
         {
             source = i;
+
+            // recvieing the results
             // Receive the offset of particular slave process
             MPI_Recv(&offset, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
             // Receive the number of rows that each slave process processed
@@ -119,16 +130,18 @@ void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, c
             std::copy(&matrix_c[i][0], &matrix_c[i][0] + c2, &myarr3[i][0]);
         }
         // Print the result matrix
-        printf("\nResult Matrix C = Matrix A * Matrix B:\n\n");
-        for (int i = 0; i < r1; i++)
-        {
-            for (int j = 0; j < c2; j++)
-            {
-                printf("%.0f\t", myarr3[i][j]);
-            }
-            printf("\n");
-        }
-        printf("\n");
+        cout << "\n\t........ Processing with help of slaves ........" << endl;
+        cout << "\t................ Result Returned ..............." << endl
+             << endl;
+        // for (int i = 0; i < r1; i++)
+        // {
+        //     for (int j = 0; j < c2; j++)
+        //     {
+        //         printf("%.0f\t", myarr3[i][j]);
+        //     }
+        //     printf("\n");
+        // }
+        // printf("\n");
     }
 
     // Slave Processes
@@ -178,33 +191,45 @@ void multiply(double **myarr1, double **myarr2, double **myarr3, const int r1, c
     }
 }
 
+// the basic function that solves according to the optimal order beig given
 double **solveEvaluation(int **dimensions, double ***arrays, string evaluation)
 {
-    stack<double **> stk;
-    stack<int *> dimensionsStack;
+    // maintaing stacks to solve the nested parenthesis operations
+    stack<double **> stk;         // the array stack
+    stack<int *> dimensionsStack; // to store dimensions parallely
+    stack<int> arrayId;           // storing ids just for printing the stuff
 
+    // iterate till whole evaluation string
     for (int i = 0; i < evaluation.length(); i++)
     {
+        // pushing into stack if its digit else wise will pop when ever recieved a ) bracket
         if (isdigit(evaluation[i]))
         {
             // Push the matrix onto the stack
             stk.push(arrays[evaluation[i] - '1']);
             // Push the dimensions onto the stack
             dimensionsStack.push(dimensions[evaluation[i] - '1']);
+            arrayId.push(evaluation[i] - '0');
         }
         else if (evaluation[i] == ')')
         {
             // Pop the top two matrices, multiply, and push the result back
+            // getting the two top matrices to multiply each other
             double **matrix2 = stk.top();
             stk.pop();
             int *dim2 = dimensionsStack.top();
             dimensionsStack.pop();
+            int id2 = arrayId.top();
+            arrayId.pop();
 
             double **matrix1 = stk.top();
             stk.pop();
             int *dim1 = dimensionsStack.top();
             dimensionsStack.pop();
+            int id1 = arrayId.top();
+            arrayId.pop();
 
+            // getting the dimensions accordingly
             int r1 = dim1[0];
             int c1 = dim1[1];
             int c2 = dim2[1];
@@ -213,7 +238,10 @@ double **solveEvaluation(int **dimensions, double ***arrays, string evaluation)
             for (int i = 0; i < r1; ++i)
                 result[i] = new double[c2];
 
-            multiply(matrix1, matrix2, result, r1, c1, c2);
+            // calling the actual multiply function
+            // let say it will multiply A1 and A2 and would return result r we are boun dto get r
+            // so we can procced furthure
+            multiply(matrix1, matrix2, result, r1, c1, c2, id1, id2);
 
             // Push the result onto the stack
             stk.push(result);
@@ -222,6 +250,7 @@ double **solveEvaluation(int **dimensions, double ***arrays, string evaluation)
             resultDim[0] = r1;
             resultDim[1] = c2;
             dimensionsStack.push(resultDim);
+            arrayId.push(-1);
         }
     }
 
@@ -232,14 +261,18 @@ double **solveEvaluation(int **dimensions, double ***arrays, string evaluation)
 int main(int argc, char **argv)
 {
 
+    // our arrays to store all
     int **dimensions = NULL;
     double ***array = NULL;
     int TOTALARRAYS = 0;
 
-    string file_name = "test.txt";
+    // assuming dimensions good enough as being tested by main.cpp
+    // and we have been called only when dimensions are being verified
+    string file_name = "Dimensions.txt";
     dimensions = read_file(file_name, TOTALARRAYS);
 
     // 3d array memory allocation
+    // according to the dimensions being read
     array = new double **[TOTALARRAYS];
     for (int i = 0; i < TOTALARRAYS; ++i)
         array[i] = new double *[dimensions[i][0]];
@@ -278,21 +311,49 @@ int main(int argc, char **argv)
         }
 
         cout << "\n\t::::::::::::::::::::::::::" << endl;
-        cout << "\t Running part A - MPI Mul" << endl;
+        cout << "\t Running part B - MPI Mul" << endl;
         cout << "\t::::::::::::::::::::::::::\n"
              << endl;
 
-        // the arrays
-        cout << "The arrays are: " << endl;
-        for (int i = 0; i < TOTALARRAYS; i++)
-        {
-            cout << "Array " << i + 1 << endl;
-            printArray(array[i], dimensions[i][0], dimensions[i][1]);
-            cout << endl;
-        }
+        // // the arrays
+        // cout << "The arrays are: " << endl;
+        // for (int i = 0; i < TOTALARRAYS; i++)
+        // {
+        //     cout << "Array " << i + 1 << endl;
+        //     printArray(array[i], dimensions[i][0], dimensions[i][1]);
+        //     cout << endl;
+        // }
+
+        cout << "\n Lets multiply using MPI according to optimal order " << endl;
     }
 
-    solveEvaluation(dimensions, array, evalautaionString);
+    // the resultant array ---- the grand final result
+    int fr = dimensions[0][0];
+    int fc = dimensions[TOTALARRAYS - 1][1];
+    double **finalResult = new double *[fr];
+    for (int i = 0; i < fr; i++)
+    {
+        finalResult[i] = new double[fc];
+    }
+
+    // storing the result
+    finalResult = solveEvaluation(dimensions, array, evalautaionString);
+
+    if (processId == 0)
+    {
+        // asking if wanted to print because too big answer
+        char option = 0;
+        cout << "You want to see final result (Y/N) : ";
+        cin >> option;
+
+        if (option == 'Y' || option == 'y')
+        {
+            cout << "\nFinal Resultant array is: " << endl;
+            printArray(finalResult, fr, fc);
+        }
+
+        cout << "\n\nGraphs are in proces ...............\n\n" << endl;
+    }
 
     MPI_Finalize();
 

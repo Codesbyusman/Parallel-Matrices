@@ -16,7 +16,7 @@ void printArray(double **arr, int row, int col)
     {
         for (int j = 0; j < col; ++j)
         {
-            cout << arr[i][j] << " ";
+           printf("%.0f\t", arr[i][j]);
         }
         cout << endl;
     }
