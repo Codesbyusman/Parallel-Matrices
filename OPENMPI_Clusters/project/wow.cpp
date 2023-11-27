@@ -33,7 +33,7 @@ double *solveEvaluation(int **dimensions, double **arrays, string evaluation)
             for (int i = 0; i < r1; ++i)
                 result[i] = new double[c2];
 
-            multiply(matrix1, matrix2, result, r1, c1, c2);
+            //multiply(matrix1, matrix2, result, r1, c1, c2);
 
             // Push the result onto the stack
             stk.push(result);

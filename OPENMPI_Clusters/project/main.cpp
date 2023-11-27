@@ -12,6 +12,7 @@
 #include <set>
 #include <climits>
 #include <mpi.h>
+#include <queue>
 #include <stack>
 
 extern void processArray(int argc, char *argv[], int rowsA, int colsA, int colsB, int p_rank, int num_process, int **returnarray);
@@ -217,31 +218,28 @@ int *getDimentions(int **arr, int row, int col)
     return mydimention;
 }
 
-std::stack<std::string> extractOperations(const std::string& s) {
+std::stack<std::string> extractOperations(const std::string &s)
+{
     std::stack<std::string> operations;
     std::string currentOperation;
-    int openBrackets = 0;
-    for (char c : s) {
-        if (c == '(') {
-            openBrackets++;
-            if (openBrackets > 1) {
-                currentOperation += c;
-            }
-        } else if (c == ')') {
-            openBrackets--;
-            if (openBrackets >= 1) {
-                currentOperation += c;
-            }
-            if (openBrackets == 1 && !currentOperation.empty()) {
+    for (char c : s)
+    {
+        if (c == '(' || c == ')')
+        {
+            if (!currentOperation.empty())
+            {
                 operations.push(currentOperation);
                 currentOperation.clear();
             }
-        } else {
+        }
+        else
+        {
             currentOperation += c;
         }
     }
     return operations;
 }
+
 // it just print the array but squre only
 void printArray(int n, int **mat)
 {
@@ -256,10 +254,134 @@ void printArray(int n, int **mat)
     cout << endl;
 }
 
+std::string removeCharacter(const std::string &input, char character)
+{
+    std::string result = input;
+
+    // Iterate through the string and remove the specified character
+    size_t pos = result.find(character);
+    while (pos != std::string::npos)
+    {
+        result.erase(pos, 1);
+        pos = result.find(character, pos);
+    }
+
+    return result;
+}
+
+
+std::queue<int*> dimen_to_operate;
+
+int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int argc, char *argv[], int p_rank, int num_process)
+{
+    cout << "I am called by process: " << p_rank << endl;
+    int **result = nullptr;
+
+    stack<int **> stk;
+    stack<int *> dimensionsStack;
+    int r1, c1, c2;
+    int *dimen;
+
+    if (p_rank == 0)
+    {
+        cout << "Inside solveEvaluation" << endl;
+        for (int i = 0; i < evaluation.length(); i++)
+        {
+            if (isdigit(evaluation[i]))
+            {
+                // Push the matrix onto the stack
+                stk.push(arrays[evaluation[i] - '1']);
+                // Push the dimensions onto the stack
+                dimensionsStack.push(dimensions[evaluation[i] - '1']);
+            }
+            else if (evaluation[i] == ')')
+            {
+                // Pop the top two matrices, multiply, and push the result back
+                int **matrix2 = stk.top();
+                stk.pop();
+                int *dim2 = dimensionsStack.top();
+                dimensionsStack.pop();
+
+                int **matrix1 = stk.top();
+                stk.pop();
+                int *dim1 = dimensionsStack.top();
+                dimensionsStack.pop();
+
+                r1 = dim1[0];
+                c1 = dim1[1];
+                c2 = dim2[1];
+
+                // store the dimensions in an array
+                
+
+                cout << "R1:" << r1 << " C1:" << c1 << " C2:" << c2 << endl;
+                // push r1,c1,c2 to the stack
+                int* arr1 = new int[3];
+                arr1[0] = r1;
+                arr1[1] = c1;
+                arr1[2] = c2;
+                dimen_to_operate.push(arr1);
+                // r1 = 4;
+                // c2 = 4;
+
+                result = new int *[r1];
+                for (int i = 0; i < r1; ++i)
+                {
+                    result[i] = new int[c2];
+                }
+
+                // Push the result onto the stack
+                stk.push(result);
+
+                int *resultDim = new int[2];
+                resultDim[0] = r1;
+                resultDim[1] = c2;
+                dimensionsStack.push(resultDim);
+            }
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    // get the r1,c1,c2 from the queue
+  //  dimen = dimen_to_operate.front();
+  //  r1 = dimen[0];
+  //  c1 = dimen[1];
+  //  c2 = dimen[2];
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    int squareSize2 = max(r1, c1);
+    int squareSize = max(squareSize2, c2);
+
+    //memory for the result
+   // result = new int *[squareSize];
+   // for (int i = 0; i < squareSize; i++)
+   // {
+   //     result[i] = new int[squareSize];
+   // }
+    //  multiply(matrix1, matrix2, result, r1, c1, c2);
+    processArray(argc, argv, squareSize, squareSize, squareSize, p_rank, num_process, result);
+    //MPI_Barrier(MPI_COMM_WORLD);
+/*
+    if (p_rank == 0)
+    {
+                        int *test = dimen_to_operate.front(); 
+                cout << "Test: " << test[0] << " " << test[1] << " " << test[2] << endl;
+        // print the result
+        cout << "Finally Result: " << endl;
+        printArray(4, stk.top());
+        // The final result should be at the top of the stack
+        return stk.top();
+    }
+    else
+    {
+        return NULL;
+    }
+    */
+}
+
 std::stack<std::string> operations;
 string file_name = "test.txt";
 int **dimensions = read_file(file_name);
-
 // Function: main
 int main(int argc, char *argv[])
 {
@@ -280,6 +402,8 @@ int main(int argc, char *argv[])
     int first_col = 0;
     int second_row = 0;
     int second_col = 0;
+    std::string result;
+    int ***array = NULL;
 
     if (p_rank == 0)
     {
@@ -290,7 +414,7 @@ int main(int argc, char *argv[])
         printArray(dimensions, TOTALARRAYS, 2);
 
         // 3d array memory allocation
-        int ***array = new int **[TOTALARRAYS];
+        array = new int **[TOTALARRAYS];
         for (int i = 0; i < TOTALARRAYS; ++i)
             array[i] = new int *[dimensions[i][0]];
 
@@ -343,8 +467,14 @@ int main(int argc, char *argv[])
         cout << mystring << endl;
 
         std::string s = mystring;
+
+        // Remove all occurrences of 'A' from the string
+        result = removeCharacter(mystring, 'A');
+
+        std::cout << "Modified string: " << result << std::endl;
         operations = extractOperations(s);
         int index = 0;
+
         // while (!operations.empty())
         // {
         std::cout << operations.top() << std::endl;
@@ -401,67 +531,70 @@ int main(int argc, char *argv[])
         operations.pop();
         //}
     }
-
     MPI_Barrier(MPI_COMM_WORLD);
+    solveEvaluation(dimensions, array, result, argc, argv, p_rank, num_process);
+
     // processArray(argc, argv, 4, 4, 4, p_rank, num_process);
     // an array to get the results
     // getting the size
-   // for(int i=0;i<5;i++){
- 
-    int squareSize2 = max(first_row, first_col);
-    int squareSize = max(squareSize2, second_col);
-    int **returnarray = new int *[squareSize];
-    for (int i = 0; i < squareSize; i++)
+    /*
+    for (int i = 0; i < 5; i++)
     {
-        returnarray[i] = new int[squareSize];
-    }
-    processArray(argc, argv, first_row, first_col, second_col, p_rank, num_process, returnarray);
-    MPI_Barrier(MPI_COMM_WORLD);
 
-    if (p_rank == 0)
-    {
-        // print the result
-        cout << "Finally Result: " << endl;
-        printArray(squareSize, returnarray);
-    }
-    // delete[] mydimentions;
-    MPI_Barrier(MPI_COMM_WORLD);
+        int squareSize2 = max(first_row, first_col);
+        int squareSize = max(squareSize2, second_col);
+        int **returnarray = new int *[squareSize];
+        for (int i = 0; i < squareSize; i++)
+        {
+            returnarray[i] = new int[squareSize];
+        }
+        processArray(argc, argv, first_row, first_col, second_col, p_rank, num_process, returnarray);
+        MPI_Barrier(MPI_COMM_WORLD);
 
-    if (p_rank == 0)
-    {
-        string input_string = operations.top();
-        size_t middle_index = input_string.length() / 2;
+        if (p_rank == 0)
+        {
+            // print the result
+            cout << "Finally Result: " << endl;
+            printArray(squareSize, returnarray);
+        }
+        // delete[] mydimentions;
+        MPI_Barrier(MPI_COMM_WORLD);
 
-        // Split the string into two parts
-        std::string useless = input_string.substr(0, middle_index);
-        std::string array_number = input_string.substr(middle_index);
+        if (p_rank == 0)
+        {
+            string input_string = operations.top();
+            size_t middle_index = input_string.length() / 2;
 
-        // Output the results
-        std::cout << "\nUseless: " << useless << std::endl;
-        std::cout << "\nArray Number: " << array_number << std::endl;
+            // Split the string into two parts
+            std::string useless = input_string.substr(0, middle_index);
+            std::string array_number = input_string.substr(middle_index);
 
-        int next_array_number = std::atoi(array_number.c_str());
+            // Output the results
+            std::cout << "\nUseless: " << useless << std::endl;
+            std::cout << "\nArray Number: " << array_number << std::endl;
 
-        cout << "Rows: " << dimensions[next_array_number - 1][0] << " Cols: " << dimensions[next_array_number - 1][1] << endl;
+            int next_array_number = std::atoi(array_number.c_str());
 
-        first_row = dimensions[next_array_number - 1][0];
-        first_col = dimensions[next_array_number - 1][1];
-        second_col = squareSize;
-        operations.pop();
-    //}
-    MPI_Barrier(MPI_COMM_WORLD);
-   }
-/*
-    processArray(argc, argv, 4, 3, squareSize, p_rank, num_process, returnarray);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (p_rank == 0)
-    {
-        // print the result
-        cout << "Finally Result: " << endl;
-        printArray(squareSize, returnarray);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-*/
+            cout << "Rows: " << dimensions[next_array_number - 1][0] << " Cols: " << dimensions[next_array_number - 1][1] << endl;
+
+            first_row = dimensions[next_array_number - 1][0];
+            first_col = dimensions[next_array_number - 1][1];
+            second_col = squareSize;
+            operations.pop();
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }*/
+    /*
+        processArray(argc, argv, 4, 3, squareSize, p_rank, num_process, returnarray);
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (p_rank == 0)
+        {
+            // print the result
+            cout << "Finally Result: " << endl;
+            printArray(squareSize, returnarray);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    */
     // rows:1,cols:3
     cout << "Hello World!" << endl;
     return 0;

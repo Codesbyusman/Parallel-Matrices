@@ -1,0 +1,23 @@
+# Exclude all files and directories starting with .git
+.git
+.gitignore
+
+# Exclude node_modules directory for a Node.js project
+node_modules
+
+# Exclude temporary and build files
+*.log
+*.tmp
+*.bak
+
+# Exclude IDE-specific files and directories
+.vscode/
+.idea/
+
+# Exclude Docker-specific files
+Dockerfile
+.dockerignore
+
+# Exclude files related to tests
+#project/
+#projects/
