@@ -10,6 +10,9 @@
 #include <map>
 #include <set>
 #include <climits>
+#include <vector>
+#include <string>  // Add this line for 'stoi'
+
 
 using namespace std;
 
@@ -64,11 +67,10 @@ int **read_file(string file_name)
         string delimiter = "X";
         string token = mydata[i].substr(0, mydata[i].find(delimiter));
         // cout << token << endl;
-        array[i][0] = stoi(token);
-        // After the delimiter
+        array[i][0] = std::stoi(token);        // After the delimiter
         string token2 = mydata[i].substr(mydata[i].find(delimiter) + 1, mydata[0].length());
         // cout << token2 << endl;
-        array[i][1] = stoi(token2);
+        array[i][1] = std::stoi(token2);
     }
 
     // print he array
@@ -150,21 +152,21 @@ int MatrixChainOrder(int dimensions[], int n, int brackets[])
 }
 
 // Function to print the optimal matrix chain multiplication
-void printOptimalParenthesis(int i, int j, int n, int brackets[])
+std::string getOptimalParenthesis(int i, int j, int n, const std::vector<int>& brackets)
 {
     if (i == j)
     {
-        printf("A%d", i);
+        return "A" + std::to_string(i);
     }
     else
     {
-        printf("(");
-        printOptimalParenthesis(i, brackets[i + j * n], n, brackets);
-        printOptimalParenthesis(brackets[i + j * n] + 1, j, n, brackets);
-        printf(")");
+        std::string result = "(";
+        result += getOptimalParenthesis(i, brackets[i + j * n], n, brackets);
+        result += getOptimalParenthesis(brackets[i + j * n] + 1, j, n, brackets);
+        result += ")";
+        return result;
     }
 }
-
 // a function that will return the dimentions after reading the array
 //2 3 
 //3 4 
@@ -212,6 +214,7 @@ int* getDimentions(int **arr, int row, int col)
 
     return mydimention;
 }
+
 
 // Function: main
 int main()
@@ -272,9 +275,11 @@ int main()
 
     printf("Optimal Cost: %d\n", MatrixChainOrder(mydimentions, n, mybrak));
     printf("Optimal Parenthesization: ");
-    printOptimalParenthesis(1, n - 1, n, mybrak);
+  std::string optimalParenthesis = getOptimalParenthesis(1, n - 1, n, mybrak);
 
-
+    // Now 'optimalParenthesis' contains the final string
+    std::cout << "Optimal Parenthesis: " << optimalParenthesis << std::endl;
+dResult' contains the final string
     delete[] mydimentions;
 
     cout << "Hello World!" << endl;
