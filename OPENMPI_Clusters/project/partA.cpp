@@ -349,7 +349,7 @@ int main(int argc, char **argv)
 
     std::clock_t start, stop;
 
-    MPI_Barrier(MPI_COMM_WORLD);
+   // MPI_Barrier(MPI_COMM_WORLD);
     if (processId == 0)
         // Get the starting clock tick
         start = std::clock();
@@ -388,7 +388,7 @@ int main(int argc, char **argv)
              << endl;
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+   // MPI_Barrier(MPI_COMM_WORLD);
 
     // free the memory
     delete[] dimensions;
