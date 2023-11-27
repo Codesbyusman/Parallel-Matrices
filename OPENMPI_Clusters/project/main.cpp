@@ -217,27 +217,49 @@ int *getDimentions(int **arr, int row, int col)
     return mydimention;
 }
 
-std::stack<std::string> extractOperations(const std::string &s)
-{
+std::stack<std::string> extractOperations(const std::string& s) {
     std::stack<std::string> operations;
     std::string currentOperation;
-    for (char c : s)
-    {
-        if (c == '(' || c == ')')
-        {
-            if (!currentOperation.empty())
-            {
+    int openBrackets = 0;
+    for (char c : s) {
+        if (c == '(') {
+            openBrackets++;
+            if (openBrackets > 1) {
+                currentOperation += c;
+            }
+        } else if (c == ')') {
+            openBrackets--;
+            if (openBrackets >= 1) {
+                currentOperation += c;
+            }
+            if (openBrackets == 1 && !currentOperation.empty()) {
                 operations.push(currentOperation);
                 currentOperation.clear();
             }
-        }
-        else
-        {
+        } else {
             currentOperation += c;
         }
     }
     return operations;
 }
+// it just print the array but squre only
+void printArray(int n, int **mat)
+{
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            cout << mat[i][j] << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+std::stack<std::string> operations;
+string file_name = "test.txt";
+int **dimensions = read_file(file_name);
+
 // Function: main
 int main(int argc, char *argv[])
 {
@@ -253,7 +275,7 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &p_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_process);
 
-        // adding a if statement to check the array index
+    // adding a if statement to check the array index
     int first_row = 0;
     int first_col = 0;
     int second_row = 0;
@@ -264,8 +286,7 @@ int main(int argc, char *argv[])
         printf("Number of processes: %d\n", num_process);
 
         srand(time(NULL));
-        string file_name = "test.txt";
-        int **dimensions = read_file(file_name);
+
         printArray(dimensions, TOTALARRAYS, 2);
 
         // 3d array memory allocation
@@ -322,60 +343,76 @@ int main(int argc, char *argv[])
         cout << mystring << endl;
 
         std::string s = mystring;
-        std::stack<std::string> operations = extractOperations(s);
+        operations = extractOperations(s);
         int index = 0;
-        while (!operations.empty())
+        // while (!operations.empty())
+        // {
+        std::cout << operations.top() << std::endl;
+        // Find the middle index
+        if (index == 0)
         {
-            std::cout << operations.top() << std::endl;
-            // Find the middle index
-            if (index == 0)
-            {
-                string input_string = operations.top();
-                size_t middle_index = input_string.length() / 2;
+            string input_string = operations.top();
+            size_t middle_index = input_string.length() / 2;
 
-                // Split the string into two parts
-                std::string first_part = input_string.substr(0, middle_index);
-                std::string second_part = input_string.substr(middle_index);
+            // Split the string into two parts
+            std::string first_part = input_string.substr(0, middle_index);
+            std::string second_part = input_string.substr(middle_index);
 
-                // Output the results
-                std::cout << "First part: " << first_part << std::endl;
-                std::cout << "Second part: " << second_part << std::endl;
+            // Output the results
+            std::cout << "First part: " << first_part << std::endl;
+            std::cout << "Second part: " << second_part << std::endl;
 
+            // Extract the numeric part from the string (assuming it's always at the end)
+            std::string firstnumericPart = first_part.substr(1); // Assuming the string format is always "A" followed by digits
+            // Convert the numeric part to an integer using std::atoi
+            int firstnumericValue = std::atoi(firstnumericPart.c_str());
+            std::cout << "First Numeric value: " << firstnumericValue << std::endl;
+            first_row = dimensions[firstnumericValue - 1][0];
+            first_col = dimensions[firstnumericValue - 1][1];
+            cout << "Rows: " << first_row << " Cols: " << first_col << endl;
 
-
-           
-                // Extract the numeric part from the string (assuming it's always at the end)
-                std::string firstnumericPart = first_part.substr(1); // Assuming the string format is always "A" followed by digits
-                // Convert the numeric part to an integer using std::atoi
-                int firstnumericValue = std::atoi(firstnumericPart.c_str());
-                std::cout << "First Numeric value: " << firstnumericValue << std::endl;
-                first_row = dimensions[firstnumericValue-1][0];
-                first_col = dimensions[firstnumericValue-1][1];
-                cout << "Rows: " << first_row << " Cols: " << first_col << endl;
-
-                // Extract the numeric part from the string (assuming it's always at the end)
-                std::string secondnumericPart = second_part.substr(1); // Assuming the string format is always "A" followed by digits
-                // Convert the numeric part to an integer using std::atoi
-                int secondnumericValue = std::atoi(secondnumericPart.c_str());
-                std::cout << "Second Numeric value: " << secondnumericValue << std::endl;
-                second_row = dimensions[secondnumericValue-1][0];
-                second_col = dimensions[secondnumericValue-1][1];
-                cout << "Rows: " << second_row << " Cols: " << second_col << endl;
-
-            }
-            index++;
-            operations.pop();
+            // Extract the numeric part from the string (assuming it's always at the end)
+            std::string secondnumericPart = second_part.substr(1); // Assuming the string format is always "A" followed by digits
+            // Convert the numeric part to an integer using std::atoi
+            int secondnumericValue = std::atoi(secondnumericPart.c_str());
+            std::cout << "Second Numeric value: " << secondnumericValue << std::endl;
+            second_row = dimensions[secondnumericValue - 1][0];
+            second_col = dimensions[secondnumericValue - 1][1];
+            cout << "Rows: " << second_row << " Cols: " << second_col << endl;
         }
+        else
+        {
+            string input_string = operations.top();
+            size_t middle_index = input_string.length() / 2;
+
+            // Split the string into two parts
+            std::string useless = input_string.substr(0, middle_index);
+            std::string array_number = input_string.substr(middle_index);
+
+            // Output the results
+            std::cout << "\nUseless: " << useless << std::endl;
+            std::cout << "\nArray Number: " << array_number << std::endl;
+
+            int next_array_number = std::atoi(array_number.c_str());
+
+            cout << "Rows: " << dimensions[next_array_number - 1][0] << " Cols: " << dimensions[next_array_number - 1][1] << endl;
+        }
+        index++;
+        operations.pop();
+        //}
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
     // processArray(argc, argv, 4, 4, 4, p_rank, num_process);
     // an array to get the results
-    //getting the size
+    // getting the size
+   // for(int i=0;i<5;i++){
+ 
     int squareSize2 = max(first_row, first_col);
     int squareSize = max(squareSize2, second_col);
-    int** returnarray= new int*[squareSize];
-    for(int i = 0; i < squareSize; i++){
+    int **returnarray = new int *[squareSize];
+    for (int i = 0; i < squareSize; i++)
+    {
         returnarray[i] = new int[squareSize];
     }
     processArray(argc, argv, first_row, first_col, second_col, p_rank, num_process, returnarray);
@@ -383,19 +420,49 @@ int main(int argc, char *argv[])
 
     if (p_rank == 0)
     {
-        //print the result
+        // print the result
         cout << "Finally Result: " << endl;
-        for (int i = 0; i < squareSize; i++)
-        {
-            for (int j = 0; j < squareSize; j++)
-            {
-                cout << returnarray[i][j] << " ";
-            }
-            cout << endl;
-        }
+        printArray(squareSize, returnarray);
     }
     // delete[] mydimentions;
     MPI_Barrier(MPI_COMM_WORLD);
+
+    if (p_rank == 0)
+    {
+        string input_string = operations.top();
+        size_t middle_index = input_string.length() / 2;
+
+        // Split the string into two parts
+        std::string useless = input_string.substr(0, middle_index);
+        std::string array_number = input_string.substr(middle_index);
+
+        // Output the results
+        std::cout << "\nUseless: " << useless << std::endl;
+        std::cout << "\nArray Number: " << array_number << std::endl;
+
+        int next_array_number = std::atoi(array_number.c_str());
+
+        cout << "Rows: " << dimensions[next_array_number - 1][0] << " Cols: " << dimensions[next_array_number - 1][1] << endl;
+
+        first_row = dimensions[next_array_number - 1][0];
+        first_col = dimensions[next_array_number - 1][1];
+        second_col = squareSize;
+        operations.pop();
+    //}
+    MPI_Barrier(MPI_COMM_WORLD);
+   }
+/*
+    processArray(argc, argv, 4, 3, squareSize, p_rank, num_process, returnarray);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (p_rank == 0)
+    {
+        // print the result
+        cout << "Finally Result: " << endl;
+        printArray(squareSize, returnarray);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+*/
+    // rows:1,cols:3
     cout << "Hello World!" << endl;
     return 0;
 }
