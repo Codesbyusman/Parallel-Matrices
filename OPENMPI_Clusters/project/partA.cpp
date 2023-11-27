@@ -1,7 +1,10 @@
 #include <iostream>
+#include <iomanip>
 #include <stack>
 #include "functions.h"
 #include <mpi.h>
+#include <ctime>
+#include <fstream>
 
 using namespace std;
 
@@ -336,8 +339,14 @@ int main(int argc, char **argv)
         finalResult[i] = new double[fc];
     }
 
+    // Get the starting clock tick
+    std::clock_t start = std::clock();
+
     // storing the result
     finalResult = solveEvaluation(dimensions, array, evalautaionString);
+
+    // Get the ending clock tick s
+    std::clock_t stop = std::clock();
 
     if (processId == 0)
     {
@@ -351,10 +360,22 @@ int main(int argc, char **argv)
             cout << "\nFinal Resultant array is: " << endl;
             printArray(finalResult, fr, fc);
         }
+        // Calculate the elapsed time in seconds
+        double elapsedSeconds = (double)(stop - start) / CLOCKS_PER_SEC;
+        double elapsedMillisecond = (double)(stop - start) * 1000 / CLOCKS_PER_SEC;
 
-        cout << "\n\nGraphs are in proces ...............\n\n" << endl;
+        cout << fixed << setprecision(2);
+        cout << "\n\nTime taken by code: " << elapsedSeconds << " seconds" << endl;
+        cout << "Time taken by code: " << elapsedMillisecond << " milliseconds" << endl
+             << endl;
+
+        cout << "\n\nGraphs are in proces ...............\n\n"
+             << endl;
     }
 
+
+    delete[] dimensions;
+    delete[] array;
     MPI_Finalize();
 
     return 0;

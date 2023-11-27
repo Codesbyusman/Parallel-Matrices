@@ -121,6 +121,23 @@ int *getDimentions(int **arr, int row, int col)
     return mydimention;
 }
 
+// will be using for checking the dimesnsions provided are correct or not
+bool dimensionChecker(int **dimensions, int size)
+{
+    for (int i = 0; i < size - 1; i++)
+    {
+        // someting went wrong
+        // previous col not eqiual to nexts row
+        if (dimensions[i][1] != dimensions[i + 1][0])
+        {
+            return false;
+        }
+    }
+
+    // all is fine dimensions are correct
+    return true;
+}
+
 // Function: main
 int main(int argc, char **argv)
 {
@@ -132,6 +149,16 @@ int main(int argc, char **argv)
 
     string file_name = "Dimensions.txt";
     dimensions = read_file(file_name, TOTALARRAYS);
+
+    // checkig if dimension provided are correct are not
+    if (!dimensionChecker(dimensions, TOTALARRAYS))
+    {
+        cout << "\n\n ....... Wrong Dimensions --- Not compatible for multiplication change Dimensions ......\n"
+             << endl;
+
+        return 1;
+    }
+
     cout << "\n\nTotal arrays are: " << TOTALARRAYS << endl;
     cout << "with dimensions as : " << endl;
     printArray(dimensions, TOTALARRAYS, 2);
@@ -192,6 +219,8 @@ int main(int argc, char **argv)
     string command = "mpic++ -o partA partA.cpp functions.cpp";
     system(command.c_str());
 
+    cout << "\n\n ::::::::: Running on 4 processes :::::::::\n\n"
+         << endl;
     command = "mpirun -np=4 ./partA \"" + evaluationFlow + "\"";
     system(command.c_str());
 
