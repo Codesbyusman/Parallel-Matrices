@@ -16,7 +16,7 @@ void printArray(double **arr, int row, int col)
     {
         for (int j = 0; j < col; ++j)
         {
-           printf("%.0f\t", arr[i][j]);
+            printf("%.0f\t", arr[i][j]);
         }
         cout << endl;
     }
@@ -119,4 +119,26 @@ void initArray(double **arr, int row, int col)
             arr[i][j] = rand() % 10;
         }
     }
+}
+
+// write time to the excel file
+void writeTimestampToExcel(double timeinSeconds, char* processes)
+{
+    std::ofstream excelFile;
+    excelFile.open("graphs.csv", std::ios::app);
+
+    // if already opened
+    if (!excelFile.is_open())
+    {
+        std::cerr << "Error opening the file." << std::endl;
+        return;
+    }
+
+    // Write the timestamp to the Excel file
+    excelFile << processes<< ',' << timeinSeconds << endl;
+
+    std::cout << "Time written to " << "graphs.csv" << std::endl;
+
+    // Close the file
+    excelFile.close();
 }

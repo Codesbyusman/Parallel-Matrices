@@ -214,16 +214,38 @@ int main(int argc, char **argv)
     string evaluationFlow = getOPtimalParenthesis(1, n - 1, n, mybrak);
 
     cout << endl;
+
+    // creating news graphs.csv each time
+    system("rm graphs.csv ; touch graphs.csv");
+
     // invoking the system call to compile the part a code
     // invoking the system call to compile the part a code
     string command = "mpic++ -o partA partA.cpp functions.cpp";
     system(command.c_str());
 
+    cout << "\n\n ::::::::: Running on 2 processes :::::::::\n\n"
+         << endl;
+    command = "mpirun -np=2 ./partA \"" + evaluationFlow + "\" 2";
+    system(command.c_str());
+    
     cout << "\n\n ::::::::: Running on 4 processes :::::::::\n\n"
          << endl;
-    command = "mpirun -np=4 ./partA \"" + evaluationFlow + "\"";
+    command = "mpirun -np=4 ./partA \"" + evaluationFlow + "\" 4";
     system(command.c_str());
 
+    cout << "\n\n ::::::::: Running on 6 processes :::::::::\n\n"
+         << endl;
+    command = "mpirun -np=6 ./partA \"" + evaluationFlow + "\" 6";
+    system(command.c_str());
+
+    cout << "\n\n ::::::::: Running on 8 processes :::::::::\n\n"
+         << endl;
+    command = "mpirun -np=8 ./partA \"" + evaluationFlow + "\" 8";
+    system(command.c_str());
+
+    system("exit");
+
+    
     delete[] mybrak;
     delete[] mydimentions;
 

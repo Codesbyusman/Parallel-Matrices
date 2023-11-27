@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stack>
+#include <string>
 #include "functions.h"
 #include <mpi.h>
 #include <ctime>
@@ -246,6 +247,7 @@ double **solveEvaluation(int **dimensions, double ***arrays, string evaluation)
             // so we can procced furthure
             multiply(matrix1, matrix2, result, r1, c1, c2, id1, id2);
 
+            MPI_Barrier(MPI_COMM_WORLD);
             // Push the result onto the stack
             stk.push(result);
 
@@ -307,10 +309,10 @@ int main(int argc, char **argv)
     // the master process
     if (processId == 0)
     {
-        if (argc != 2)
+        if (argc != 3)
         {
             cout << "Invalid arguments for part a to run " << endl;
-            return 0;
+            return 1;
         }
 
         cout << "\n\t::::::::::::::::::::::::::" << endl;
@@ -330,6 +332,12 @@ int main(int argc, char **argv)
         cout << "\n Lets multiply using MPI according to optimal order " << endl;
     }
 
+    if (argc != 3)
+    {
+
+        return 1;
+    }
+
     // the resultant array ---- the grand final result
     int fr = dimensions[0][0];
     int fc = dimensions[TOTALARRAYS - 1][1];
@@ -339,14 +347,19 @@ int main(int argc, char **argv)
         finalResult[i] = new double[fc];
     }
 
-    // Get the starting clock tick
-    std::clock_t start = std::clock();
+    std::clock_t start, stop;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (processId == 0)
+        // Get the starting clock tick
+        start = std::clock();
 
     // storing the result
     finalResult = solveEvaluation(dimensions, array, evalautaionString);
 
     // Get the ending clock tick s
-    std::clock_t stop = std::clock();
+    if (processId == 0)
+        stop = std::clock();
 
     if (processId == 0)
     {
@@ -369,13 +382,19 @@ int main(int argc, char **argv)
         cout << "Time taken by code: " << elapsedMillisecond << " milliseconds" << endl
              << endl;
 
+        // writing in the csv
+        writeTimestampToExcel(elapsedSeconds, argv[2]);
         cout << "\n\nGraphs are in proces ...............\n\n"
              << endl;
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    // free the memory
     delete[] dimensions;
     delete[] array;
+
+    // Finalize the MPI environment.
     MPI_Finalize();
 
     return 0;
