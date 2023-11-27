@@ -27,9 +27,8 @@ using namespace std;
 
 int TOTALARRAYS = 0;
 
-
 // write time to the excel file
-void writeTimestampToExcel(double timeinSeconds, char* processes)
+void writeTimestampToExcel(double timeinSeconds, char *processes)
 {
     std::ofstream excelFile;
     excelFile.open("graphs.csv", std::ios::app);
@@ -42,9 +41,10 @@ void writeTimestampToExcel(double timeinSeconds, char* processes)
     }
 
     // Write the timestamp to the Excel file
-    excelFile << processes<< ',' << timeinSeconds << endl;
+    excelFile << processes << ',' << timeinSeconds << endl;
 
-    std::cout << "Time written to " << "graphs.csv" << std::endl;
+    std::cout << "Time written to "
+              << "graphs.csv" << std::endl;
 
     // Close the file
     excelFile.close();
@@ -220,21 +220,21 @@ int *getDimentions(int **arr, int row, int col)
             {
                 mydimention[index] = arr[i][j];
                 index++;
-                cout << "\n first index:" << arr[i][j] << "\n ";
+               // cout << "\n first index:" << arr[i][j] << "\n ";
             }
             // get the second index of the all other arrays
             else if (i != 0 && j == 0)
             {
                 mydimention[index] = arr[i][j];
                 index++;
-                cout << "\n Last index: " << arr[i][j] << "\n ";
+                //cout << "\n Last index: " << arr[i][j] << "\n ";
             }
             // get the last index of the last array
             else if (i == row - 1 && j == col - 1)
             {
                 mydimention[index] = arr[i][j];
                 index++;
-                cout << "\n Final index: " << arr[i][j] << "\n ";
+               // cout << "\n Final index: " << arr[i][j] << "\n ";
             }
             else
             {
@@ -303,7 +303,7 @@ std::queue<int *> dimen_to_operate;
 int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int argc, char *argv[], int p_rank, int num_process)
 {
 
-    cout << "I am called by process: " << p_rank << endl;
+    //cout << "I am called by process: " << p_rank << endl;
     int **result = nullptr;
     int **finalanswer = nullptr;
     stack<int **> stk;
@@ -315,7 +315,7 @@ int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int ar
     if (p_rank == 0)
     {
 
-        cout << "Inside solveEvaluation" << endl;
+        cout << "\n\n*********** Dimentions of Solving *************8\n\n" << endl;
         for (int i = 0; i < evaluation.length(); i++)
         {
             if (isdigit(evaluation[i]))
@@ -344,7 +344,7 @@ int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int ar
 
                 // store the dimensions in an array
 
-                cout << "R1:" << r1 << " C1:" << c1 << " C2:" << c2 << endl;
+                cout << "R1: " << r1 << " C1: " << c1 << " C2:" << c2 << endl;
                 // push r1,c1,c2 to the stack
                 int *arr1 = new int[3];
                 arr1[0] = r1;
@@ -368,31 +368,36 @@ int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int ar
             }
         }
     }
-    usleep(1000000);
+    // usleep(1000000);
     std::clock_t start, stop;
     // start the counting
-    if(p_rank == 0){
+    if (p_rank == 0)
+    {
         start = std::clock();
     }
     // we need to run until dimen_to_operate queue is not empty
-for (int i = 0; i<TOTALARRAYS-1; i++)    {
+
+    for (int i = 0; i < TOTALARRAYS - 1; i++)
+    {
         if (p_rank == 0)
         {
-            cout << "***** SOlving for index: " << i << " ******" << endl;
+         //   cout << "***** SOlving for index: " << i << " ******" << endl;
             // get the dimensions from the queue
             dimen = dimen_to_operate.front();
             r1 = dimen[0];
             c1 = dimen[1];
             c2 = dimen[2];
             // dimen_to_operate.pop();
-            cout << "***************** Going to be Solved**************" << endl;
-            cout << "R1:" << r1 << " C1:" << c1 << " C2:" << c2 << endl;
+            cout << "\n\n***************** Solving Array  **************\n" << endl;
+            cout << "R1: " << r1 << " C1: " << c1 << " C2: " << c2 << endl << endl;
+
             // allocate memory for the result
             squareSize2 = max(r1, c1);
             squareSize = max(squareSize2, c2);
 
-            if (squareSize % 2 == 1) {
-                    squareSize = squareSize + 1;
+            if (squareSize % 2 == 1)
+            {
+                squareSize = squareSize + 1;
             }
 
             finalanswer = new int *[squareSize];
@@ -408,7 +413,7 @@ for (int i = 0; i<TOTALARRAYS-1; i++)    {
             //    result[i] = new int[squareSize];
         }
 
-        usleep(1000000);
+        // usleep(1000000);
         MPI_Barrier(MPI_COMM_WORLD);
         // get the r1,c1,c2 from the queue
         //  dimen = dimen_to_operate.front();
@@ -423,21 +428,23 @@ for (int i = 0; i<TOTALARRAYS-1; i++)    {
         //     result[i] = new int[squareSize];
         // }
         //  multiply(matrix1, matrix2, result, r1, c1, c2);
+        //processArray(argc, argv, r1, c1, c2, p_rank, num_process, finalanswer);
         processArray(argc, argv, squareSize, squareSize, squareSize, p_rank, num_process, finalanswer);
+
         // MPI_Barrier(MPI_COMM_WORLD);
 
         // after solving the problem, i want to run for the next part
-        usleep(1000000);
+        // usleep(1000000);
 
         if (p_rank == 0)
         {
 
-            cout << "***************** Solved**************" << endl;
+            cout << "\n\n***************** Solved**************\n" << endl;
             // print the result
             cout << "Finally Result: " << endl;
             printArray(squareSize, finalanswer);
 
-            //delete finalanswer
+            // delete finalanswer
             for (int i = 0; i < squareSize; i++)
             {
                 delete[] finalanswer[i];
@@ -446,13 +453,12 @@ for (int i = 0; i<TOTALARRAYS-1; i++)    {
             // now pop from the queeu
             dimen_to_operate.pop();
         }
-
-      
     }
     // stop the clock
-    if(p_rank == 0){
+    if (p_rank == 0)
+    {
         stop = std::clock();
-  // Calculate the elapsed time in seconds
+        // Calculate the elapsed time in seconds
         double elapsedSeconds = (double)(stop - start) / CLOCKS_PER_SEC;
         double elapsedMillisecond = (double)(stop - start) * 1000 / CLOCKS_PER_SEC;
 
@@ -497,11 +503,12 @@ int main(int argc, char *argv[])
 
     if (p_rank == 0)
     {
+        cout <<"\n\n[+] ************** Starting the program **************[+]\n\n";
         printf("Number of processes: %d\n", num_process);
 
         srand(time(NULL));
 
-        printArray(dimensions, TOTALARRAYS, 2);
+        //printArray(dimensions, TOTALARRAYS, 2);
 
         // 3d array memory allocation
         array = new int **[TOTALARRAYS];
@@ -529,9 +536,9 @@ int main(int argc, char *argv[])
         // // print the array
         for (int i = 0; i < TOTALARRAYS; i++)
         {
-            cout << "Array " << i << endl;
-            printArray(array[i], dimensions[i][0], dimensions[i][1]);
-            cout << endl;
+          //  cout << "Array " << i << endl;
+           // printArray(array[i], dimensions[i][0], dimensions[i][1]);
+           // cout << endl;
         }
 
         // getting the dimentions into the right format as needed
@@ -548,7 +555,7 @@ int main(int argc, char *argv[])
         // chain multiplication for the above arrays to get the optimal solution
         // int mydim[] = {2,3,4,2,1};
         int n = TOTALARRAYS + 1;
-        cout << "\nn is " << n << "\n";
+        cout << "\nNumber of Arrays is " << n -1<< "\n";
         int mybrak[n * n] = {0};
 
         printf("Optimal Cost: %d\n", MatrixChainOrder(mydimentions, n, mybrak));
@@ -567,7 +574,7 @@ int main(int argc, char *argv[])
 
         // while (!operations.empty())
         // {
-        std::cout << operations.top() << std::endl;
+       // std::cout << operations.top() << std::endl;
         // Find the middle index
         if (index == 0)
         {
@@ -579,26 +586,26 @@ int main(int argc, char *argv[])
             std::string second_part = input_string.substr(middle_index);
 
             // Output the results
-            std::cout << "First part: " << first_part << std::endl;
-            std::cout << "Second part: " << second_part << std::endl;
+           // std::cout << "First part: " << first_part << std::endl;
+           // std::cout << "Second part: " << second_part << std::endl;
 
             // Extract the numeric part from the string (assuming it's always at the end)
             std::string firstnumericPart = first_part.substr(1); // Assuming the string format is always "A" followed by digits
             // Convert the numeric part to an integer using std::atoi
             int firstnumericValue = std::atoi(firstnumericPart.c_str());
-            std::cout << "First Numeric value: " << firstnumericValue << std::endl;
+           // std::cout << "First Numeric value: " << firstnumericValue << std::endl;
             first_row = dimensions[firstnumericValue - 1][0];
             first_col = dimensions[firstnumericValue - 1][1];
-            cout << "Rows: " << first_row << " Cols: " << first_col << endl;
+           // cout << "Rows: " << first_row << " Cols: " << first_col << endl;
 
             // Extract the numeric part from the string (assuming it's always at the end)
             std::string secondnumericPart = second_part.substr(1); // Assuming the string format is always "A" followed by digits
             // Convert the numeric part to an integer using std::atoi
             int secondnumericValue = std::atoi(secondnumericPart.c_str());
-            std::cout << "Second Numeric value: " << secondnumericValue << std::endl;
+           // std::cout << "Second Numeric value: " << secondnumericValue << std::endl;
             second_row = dimensions[secondnumericValue - 1][0];
             second_col = dimensions[secondnumericValue - 1][1];
-            cout << "Rows: " << second_row << " Cols: " << second_col << endl;
+            //cout << "Rows: " << second_row << " Cols: " << second_col << endl;
         }
         else
         {
@@ -686,6 +693,6 @@ int main(int argc, char *argv[])
         MPI_Barrier(MPI_COMM_WORLD);
     */
     // rows:1,cols:3
-    //cout << "Hello World!" << endl;
+    // cout << "Hello World!" << endl;
     return 0;
 }

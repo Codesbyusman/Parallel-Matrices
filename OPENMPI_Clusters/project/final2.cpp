@@ -33,7 +33,7 @@ void fillMatrix(int n, int **&mat)
     {
         for (int j = 0; j < n; j++)
         {
-            mat[i][j] = rand() % 5;
+            mat[i][j] = rand() % 10;
         }
     }
 }
@@ -469,7 +469,7 @@ int processArray(int argc, char *argv[],int rowsA,int colsA,int colsB, int p_ran
         int squareSize2 = max(rowsA, colsA);
         int squareSize = max(squareSize2, colsB);
         n = squareSize;
-        cout << "Square size: " << squareSize << endl;
+       // cout << "Square size: " << squareSize << endl;
         /*
             // Create a rectangular matrix
             int** rectMatrix = new int*[rowsA];
@@ -557,9 +557,9 @@ int processArray(int argc, char *argv[],int rowsA,int colsA,int colsB, int p_ran
             }
         }
 
-        cout << "Row of first matrix: " << rowsA << endl;
-        cout << "Col of first matrix = row of second matrix: " << colsA << endl;
-        cout << "Col of second matrix: " << colsB << endl;
+        //cout << "Row of first matrix: " << rowsA << endl;
+        //cout << "Col of first matrix = row of second matrix: " << colsA << endl;
+        //cout << "Col of second matrix: " << colsB << endl;
         // fill the mat1 and mat2 with random numbers
         for (int i = 0; i < rowsA; ++i)
         {
@@ -599,15 +599,15 @@ int processArray(int argc, char *argv[],int rowsA,int colsA,int colsB, int p_ran
         // output
         //print(n, prod);
         //printing the prod
-        cout << "Result: " << endl;
+       // cout << "Result: " << endl;
         for (int i = 0; i < n; i++)
         {
             for (int j = 0; j < n; j++)
             {
                 returnarray[i][j] = prod[i][j];
-                cout << prod[i][j] << " ";
+               // cout << prod[i][j] << " ";
             }
-            cout << endl;
+           // cout << endl;
         }
         cout << setprecision(5) << endTime - startTime << endl;
         cout << endl;
