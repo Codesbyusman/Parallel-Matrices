@@ -2,7 +2,7 @@ import csv
 import matplotlib.pyplot as plt
 
 # Read data from CSV
-with open('./project/graphs.csv', 'r') as file:
+with open('./graphs.csv', 'r') as file:
     reader = csv.reader(file)
     data = list(reader)
 

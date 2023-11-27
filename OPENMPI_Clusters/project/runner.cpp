@@ -15,26 +15,22 @@ int main(int argc, char *argv[])
     command = "mpirun -np 8 ./a.out 8";
     system(command.c_str());
 
-    cout << "\n\n ::::::::: Running on 10 processes :::::::::\n\n"
-         << endl;
-    command = "mpirun -np 10 ./a.out 10";
-    system(command.c_str());
 
     cout << "\n\n ::::::::: Running on 12 processes :::::::::\n\n"
          << endl;
     command = "mpirun -np 12 ./a.out 12";
     system(command.c_str());
 
-    cout << "\n\n ::::::::: Running on 14 processes :::::::::\n\n"
-         << endl;
-    command = "mpirun -np 14 ./a.out 14";
-    system(command.c_str());
 
     cout << "\n\n ::::::::: Running on 16 processes :::::::::\n\n"
          << endl;
     command = "mpirun -np 16 ./a.out 16";
     system(command.c_str());
 
+        cout << "\n\n ::::::::: Running on 20 processes :::::::::\n\n"
+         << endl;
+    command = "mpirun -np 20 ./a.out 20";
+    system(command.c_str());
     system("exit");
     return 0;
 }
