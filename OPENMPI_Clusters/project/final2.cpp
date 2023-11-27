@@ -439,7 +439,7 @@ void convertToSquareMatrix(int **&rectMatrix, int originalRows, int originalCols
     // Replace the original matrix with the square matrix
     rectMatrix = squareMatrix;
 }
-int processArray(int argc, char *argv[],int rowsA,int colsA,int colsB, int p_rank,int num_process)
+int processArray(int argc, char *argv[],int rowsA,int colsA,int colsB, int p_rank,int num_process,int** returnarray)
 {
     /*int p_rank;
     int num_process;
@@ -597,12 +597,23 @@ int processArray(int argc, char *argv[],int rowsA,int colsA,int colsB, int p_ran
     {
         cout << "\nParallel Strassen Runtime (MPI): \n";
         // output
-        print(n, prod);
+        //print(n, prod);
+        //printing the prod
+        cout << "Result: " << endl;
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                returnarray[i][j] = prod[i][j];
+                cout << prod[i][j] << " ";
+            }
+            cout << endl;
+        }
         cout << setprecision(5) << endTime - startTime << endl;
         cout << endl;
     }
-
-    MPI_Finalize();
+    MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Finalize();
 
     return 0;
 }

@@ -14,7 +14,7 @@
 #include <mpi.h>
 #include <stack>
 
-extern void processArray(int argc, char *argv[], int rowsA, int colsA, int colsB, int p_rank, int num_process);
+extern void processArray(int argc, char *argv[], int rowsA, int colsA, int colsB, int p_rank, int num_process, int **returnarray);
 
 using namespace std;
 
@@ -253,6 +253,12 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &p_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_process);
 
+        // adding a if statement to check the array index
+    int first_row = 0;
+    int first_col = 0;
+    int second_row = 0;
+    int second_col = 0;
+
     if (p_rank == 0)
     {
         printf("Number of processes: %d\n", num_process);
@@ -335,54 +341,26 @@ int main(int argc, char *argv[])
                 std::cout << "First part: " << first_part << std::endl;
                 std::cout << "Second part: " << second_part << std::endl;
 
-                // adding a if statement to check the array index
-                int first_row = 0;
-                int first_col = 0;
-                int second_row = 0;
-                int second_col = 0;
+
 
            
                 // Extract the numeric part from the string (assuming it's always at the end)
-                std::string firstnumericPart = second_part.substr(1); // Assuming the string format is always "A" followed by digits
+                std::string firstnumericPart = first_part.substr(1); // Assuming the string format is always "A" followed by digits
                 // Convert the numeric part to an integer using std::atoi
                 int firstnumericValue = std::atoi(firstnumericPart.c_str());
                 std::cout << "First Numeric value: " << firstnumericValue << std::endl;
-                // adding the loop for below operations
-                for (int i=0;i<TOTALARRAYS;i++){
-                    cout << "Array " << i << endl;
-                }
+                first_row = dimensions[firstnumericValue-1][0];
+                first_col = dimensions[firstnumericValue-1][1];
+                cout << "Rows: " << first_row << " Cols: " << first_col << endl;
 
-
-
-                if (first_part == "A6" && second_part == "A7")
-                {
-             
-                    first_row = dimensions[5][0];
-                    first_col = dimensions[5][1];
-                    second_row = dimensions[6][0];
-                    second_col = dimensions[6][1];
-                    cout << "Rows: " << first_row << " Cols: " << first_col << endl;
-                    cout << "Rows: " << second_row << " Cols: " << second_col << endl;
-                }
-
-                else if (first_part == "A6" && second_part == "A1")
-                {
-                    first_row = dimensions[5][0];
-                    first_col = dimensions[5][1];
-                    second_row = dimensions[0][0];
-                    second_col = dimensions[0][1];
-                    cout << "Rows: " << first_row << " Cols: " << first_col << endl;
-                    cout << "Rows: " << second_row << " Cols: " << second_col << endl;
-                }
-                else if (first_part == "A6" && second_part == "A2"){
-
-                    first_row = dimensions[5][0];
-                    first_col = dimensions[5][1];
-                    second_row = dimensions[1][0];
-                    second_col = dimensions[1][1];
-                    cout << "Rows: " << first_row << " Cols: " << first_col << endl;
-                    cout << "Rows: " << second_row << " Cols: " << second_col << endl;
-                }
+                // Extract the numeric part from the string (assuming it's always at the end)
+                std::string secondnumericPart = second_part.substr(1); // Assuming the string format is always "A" followed by digits
+                // Convert the numeric part to an integer using std::atoi
+                int secondnumericValue = std::atoi(secondnumericPart.c_str());
+                std::cout << "Second Numeric value: " << secondnumericValue << std::endl;
+                second_row = dimensions[secondnumericValue-1][0];
+                second_col = dimensions[secondnumericValue-1][1];
+                cout << "Rows: " << second_row << " Cols: " << second_col << endl;
 
             }
             index++;
@@ -390,10 +368,34 @@ int main(int argc, char *argv[])
         }
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
     // processArray(argc, argv, 4, 4, 4, p_rank, num_process);
+    // an array to get the results
+    //getting the size
+    int squareSize2 = max(first_row, first_col);
+    int squareSize = max(squareSize2, second_col);
+    int** returnarray= new int*[squareSize];
+    for(int i = 0; i < squareSize; i++){
+        returnarray[i] = new int[squareSize];
+    }
+    processArray(argc, argv, first_row, first_col, second_col, p_rank, num_process, returnarray);
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    if (p_rank == 0)
+    {
+        //print the result
+        cout << "Finally Result: " << endl;
+        for (int i = 0; i < squareSize; i++)
+        {
+            for (int j = 0; j < squareSize; j++)
+            {
+                cout << returnarray[i][j] << " ";
+            }
+            cout << endl;
+        }
+    }
     // delete[] mydimentions;
-
+    MPI_Barrier(MPI_COMM_WORLD);
     cout << "Hello World!" << endl;
     return 0;
 }
