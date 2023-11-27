@@ -1,6 +1,7 @@
 // including the basic header files
 #include <iostream>
 #include <cstdlib>
+#include <iomanip>
 #include <ctime>
 #include <fstream>
 #include <string>
@@ -8,6 +9,7 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <ctime>
 #include <vector>
 #include <set>
 #include <unistd.h>
@@ -24,6 +26,29 @@ extern void processArray(int argc, char *argv[], int rowsA, int colsA, int colsB
 using namespace std;
 
 int TOTALARRAYS = 0;
+
+
+// write time to the excel file
+void writeTimestampToExcel(double timeinSeconds, char* processes)
+{
+    std::ofstream excelFile;
+    excelFile.open("graphs.csv", std::ios::app);
+
+    // if already opened
+    if (!excelFile.is_open())
+    {
+        std::cerr << "Error opening the file." << std::endl;
+        return;
+    }
+
+    // Write the timestamp to the Excel file
+    excelFile << processes<< ',' << timeinSeconds << endl;
+
+    std::cout << "Time written to " << "graphs.csv" << std::endl;
+
+    // Close the file
+    excelFile.close();
+}
 
 // function to display array
 void printArray(int **arr, int row, int col)
@@ -344,7 +369,11 @@ int **solveEvaluation(int **dimensions, int ***arrays, string evaluation, int ar
         }
     }
     usleep(1000000);
-
+    std::clock_t start, stop;
+    // start the counting
+    if(p_rank == 0){
+        start = std::clock();
+    }
     // we need to run until dimen_to_operate queue is not empty
 for (int i = 0; i<TOTALARRAYS-1; i++)    {
         if (p_rank == 0)
@@ -419,6 +448,23 @@ for (int i = 0; i<TOTALARRAYS-1; i++)    {
         }
 
       
+    }
+    // stop the clock
+    if(p_rank == 0){
+        stop = std::clock();
+  // Calculate the elapsed time in seconds
+        double elapsedSeconds = (double)(stop - start) / CLOCKS_PER_SEC;
+        double elapsedMillisecond = (double)(stop - start) * 1000 / CLOCKS_PER_SEC;
+
+        cout << fixed << setprecision(2);
+        cout << "\n\nTime taken by code: " << elapsedSeconds << " seconds" << endl;
+        cout << "Time taken by code: " << elapsedMillisecond << " milliseconds" << endl
+             << endl;
+
+        // writing in the csv
+        writeTimestampToExcel(elapsedSeconds, argv[1]);
+        cout << "\n\nGraphs are in proces ...............\n\n"
+             << endl;
     }
     return NULL;
 }
